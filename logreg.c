@@ -228,7 +228,32 @@ int main(int argc, char *argv[]) {
     }
     valid_cost /= valid_dataset->m;
 
-    printf("[%04zu] train: %f, valid: %f\n", iter, train_cost, valid_cost);
+    // Compute metrics
+    int tp = 0, tn = 0, fp = 0, fn = 0;
+    for (size_t i = 0; i < valid_dataset->m; i++) {
+      double *example = valid_dataset->examples + i * valid_dataset->n;
+      double h_i_ = compute_hypothesis(valid_dataset->n, theta, example);
+      int h_i = (h_i_ >= 0.5) ? 1 : 0;
+      int y_i = (int)example[valid_dataset->n - 1];
+
+      if (h_i == 1 && y_i == 1)
+        tp++;
+      else if (h_i == 0 && y_i == 1)
+        fn++;
+      else if (h_i == 1 && y_i == 0)
+        fp++;
+      else if (h_i == 0 && y_i == 0)
+        tn++;
+    }
+
+    double accuracy = (double)(tp + tn) / (tp + tn + fp + fn);
+    double precision = (double)tp / (tp + fp);
+    double recall = (double)tp / (tp + fn);
+    double f1 = 2 * (precision * recall) / (precision + recall);
+
+    printf("[%04zu] train: %f, valid: %f, accuracy: %f, precision: %f, recall: "
+           "%f, f1: %f\n",
+           iter, train_cost, valid_cost, accuracy, precision, recall, f1);
   }
   free(tmp);
 
